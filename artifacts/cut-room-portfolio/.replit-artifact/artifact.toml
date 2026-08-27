@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Cut Room Portfolio"
+description = "A cinematic portfolio website for a video editor, designed to turn selected work into an immersive, memorable first impression."
+version = "1.0.0"
+id = "artifacts/cut-room-portfolio"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23429
+
+[services.development]
+run = "pnpm --filter @workspace/cut-room-portfolio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cut-room-portfolio", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/cut-room-portfolio/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23429"
+BASE_PATH = "/"
