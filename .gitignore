@@ -47,6 +47,9 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+<<<<<<< HEAD
 
 *.mp4
-*.MP4
+*.mp4
+=======
+>>>>>>> 3efb214ff09092e54973c820e0b186c7ae21b1b0
