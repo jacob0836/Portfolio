@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import emailjs from '@emailjs/browser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ArrowDown, ArrowUpRight, Clapperboard, Mail, Menu, Play, X } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Clapperboard, Mail, Menu, Play, Volume2, VolumeX, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -9,7 +10,12 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 
 const queryClient = new QueryClient();
 
-type Category = 'All' | 'Commercial' | 'Culture' | 'Music';
+// Replace these three values with your EmailJS dashboard credentials.
+const SERVICE_ID = "YOUR_SERVICE_ID";
+const TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+
+type Category = 'All' | 'Brand Films' | 'Social Media' | 'Commercials' | 'Campaigns' | 'Reels';
 
 type Project = {
   id: string;
@@ -20,48 +26,141 @@ type Project = {
   format: string;
   description: string;
   visualClass: string;
+  videoFile?: string;
 };
 
 const projects: Project[] = [
   {
-    id: 'after-hours',
-    title: 'After Hours',
-    client: 'A24 × NTS',
-    category: 'Culture',
-    year: '2024',
-    format: 'Film / 02:16',
-    description: 'A restless portrait of the people keeping the city lit after the last train home.',
+    id: 'zenvic-01',
+    title: 'Brand Content 01',
+    client: 'Zenvic',
+    category: 'Brand Films',
+    year: '—',
+    format: 'Brand Film / —',
+    description: 'Brand-led video content shaped for clarity, consistency, and audience attention.',
     visualClass: 'visual-one',
+    videoFile: 'Zenvic 1.MP4',
   },
   {
-    id: 'soft-power',
-    title: 'Soft Power',
-    client: 'On Running',
-    category: 'Commercial',
-    year: '2024',
-    format: 'Campaign / 00:45',
-    description: 'A precise, kinetic cut about finding pace where everybody else sees noise.',
+    id: 'shift-surge-garage-01',
+    title: 'Garage Campaign 01',
+    client: 'Shift & Surge Garage',
+    category: 'Campaigns',
+    year: '—',
+    format: 'Campaign / —',
+    description: 'Promotional edits that bring together pace, product focus, and a clear brand voice.',
     visualClass: 'visual-two',
+    videoFile: 'Car 1.MP4',
   },
   {
-    id: 'glasshouse',
-    title: 'Glasshouse',
-    client: 'Maya Vale',
-    category: 'Music',
-    year: '2023',
-    format: 'Music film / 03:41',
-    description: 'Fragments of a relationship, assembled like evidence and scored in blue.',
+    id: 'shift-surge-garage-02',
+    title: 'Garage Campaign 02',
+    client: 'Shift & Surge Garage',
+    category: 'Campaigns',
+    year: '—',
+    format: 'Campaign / —',
+    description: 'Promotional edits that bring together pace, product focus, and a clear brand voice.',
     visualClass: 'visual-three',
+    videoFile: 'car 2.MP4',
   },
   {
-    id: 'field-notes',
-    title: 'Field Notes',
-    client: 'Kinfolk Radio',
-    category: 'Culture',
-    year: '2023',
-    format: 'Series / 04:08',
-    description: 'A tactile dispatch from the edge of the map. Grain, breath and a little weather.',
+    id: 'shift-surge-garage-03',
+    title: 'Garage Campaign 03',
+    client: 'Shift & Surge Garage',
+    category: 'Campaigns',
+    year: '—',
+    format: 'Campaign / —',
+    description: 'Promotional edits that bring together pace, product focus, and a clear brand voice.',
     visualClass: 'visual-four',
+    videoFile: 'car 3.MP4',
+  },
+  {
+    id: 'jote-masala-01',
+    title: 'Masala Social Content 01',
+    client: 'JoTe Masala',
+    category: 'Social Media',
+    year: '—',
+    format: 'Social Media / —',
+    description: 'Short-form brand content edited for clear messaging and repeat viewing.',
+    visualClass: 'visual-three',
+    videoFile: 'IMG_0974.MP4',
+  },
+  {
+    id: 'jote-masala-02',
+    title: 'Masala Social Content 02',
+    client: 'JoTe Masala',
+    category: 'Social Media',
+    year: '—',
+    format: 'Social Media / —',
+    description: 'Short-form brand content edited for clear messaging and repeat viewing.',
+    visualClass: 'visual-four',
+    videoFile: 'JoTe Masala 02.mp4',
+  },
+  {
+    id: 'jote-masala-03',
+    title: 'Masala Social Content 03',
+    client: 'JoTe Masala',
+    category: 'Social Media',
+    year: '—',
+    format: 'Social Media / —',
+    description: 'Short-form brand content edited for clear messaging and repeat viewing.',
+    visualClass: 'visual-one',
+    videoFile: 'New JoTe.mp4',
+  },
+  {
+    id: 'air-my-cart-01',
+    title: 'Air My Cart Promotional Content',
+    client: 'Air My Cart',
+    category: 'Commercials',
+    year: '—',
+    format: 'Commercial / —',
+    description: 'Promotional video edits built around product communication and platform-ready pacing.',
+    visualClass: 'visual-four',
+    videoFile: 'Air my Cart_1.mp4',
+  },
+  {
+    id: 'ranji-textiles-01',
+    title: 'Textile Brand Content 01',
+    client: 'Ranji Textiles',
+    category: 'Reels',
+    year: 'Current',
+    format: 'Reels / —',
+    description: 'Ongoing short-form content with a focus on rhythm, presentation, and brand consistency.',
+    visualClass: 'visual-one',
+    videoFile: 'Ranji TEX 1.mp4',
+  },
+  {
+    id: 'ranji-textiles-02',
+    title: 'Textile Brand Content 02',
+    client: 'Ranji Textiles',
+    category: 'Reels',
+    year: 'Current',
+    format: 'Reels / —',
+    description: 'Ongoing short-form content with a focus on rhythm, presentation, and brand consistency.',
+    visualClass: 'visual-two',
+    videoFile: 'Ranji TEX 2.mp4',
+  },
+  {
+    id: 'ranji-textiles-03',
+    title: 'Textile Brand Content 03',
+    client: 'Ranji Textiles',
+    category: 'Reels',
+    year: 'Current',
+    format: 'Reels / —',
+    description: 'Ongoing short-form content with a focus on rhythm, presentation, and brand consistency.',
+    visualClass: 'visual-three',
+    videoFile: 'Ranji TEX_3.mp4',
+  },
+  {
+    id: 'tiny-littora-01',
+    title: 'Brand Content 01',
+    client: 'TINY LITTORA',
+    category: 'Brand Films',
+    year: '—',
+    format: 'Brand Film / —',
+    description: 'A focused brand edit shaped around clear visual identity and audience attention.',
+    visualClass: 'visual-four',
+    videoFile: 'Ranji TEX 3.mp4',
   },
 ];
 
@@ -71,6 +170,47 @@ const navItems = [
   { label: 'About', href: '#about' },
   { label: 'Contact', href: '#contact' },
 ];
+
+const clientFolderNames: Record<string, string> = {
+  'Zenvic': 'zenvic',
+  'Shift & Surge Garage': 'shift-and-surge-garage',
+  'JoTe Masala': 'jote-masala',
+  'Air My Cart': 'air-my-cart',
+  'Ranji Textiles': 'ranji-textiles',
+  'TINY LITTORA': 'tiny-littora',
+};
+
+function getClientVideoPath(client: string, videoNumber: number) {
+  return `/client-videos/${clientFolderNames[client]}/${String(videoNumber).padStart(2, '0')}.mp4`;
+}
+
+const videoDatabaseName = 'blackxspace-client-videos';
+
+function openVideoDatabase() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(videoDatabaseName, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('videos');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadClientVideos() {
+  const database = await openVideoDatabase();
+  const videos = await new Promise<Record<string, string>>((resolve, reject) => {
+    const result: Record<string, string> = {};
+    const request = database.transaction('videos', 'readonly').objectStore('videos').openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return resolve(result);
+      result[String(cursor.key)] = URL.createObjectURL(cursor.value as Blob);
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+  return videos;
+}
 
 function useReveal() {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -113,7 +253,7 @@ function Header({ menuOpen, setMenuOpen }: { menuOpen: boolean; setMenuOpen: (op
   return (
     <header className="topbar">
       <a className="brand-mark" href="#top" data-testid="link-brand">
-        CUT <span>/</span> TO
+        BLACKxSPACE
       </a>
       <nav className={`top-nav${menuOpen ? ' open' : ''}`} aria-label="Main navigation">
         {navItems.map((item) => (
@@ -152,7 +292,7 @@ function ReelModal({ close }: { close: () => void }) {
     <div className="modal-backdrop" role="presentation" onClick={close}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="reel-title" onClick={(event) => event.stopPropagation()}>
         <div className="modal-top">
-          <strong id="reel-title">CUT / TO — showreel 2024</strong>
+          <strong id="reel-title">BLACKxSPACE — showreel 2024</strong>
           <button className="modal-close" type="button" onClick={close} aria-label="Close showreel" data-testid="button-close-reel">
             <X size={19} />
           </button>
@@ -169,7 +309,73 @@ function ReelModal({ close }: { close: () => void }) {
   );
 }
 
-function ProjectModal({ project, close }: { project: Project; close: () => void }) {
+function ProjectVideo({ src, autoPlay, onError }: { src: string; autoPlay: boolean; onError: () => void }) {
+  const [aspectRatio, setAspectRatio] = useState('16 / 9');
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const togglePlayback = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      void videoRef.current.play();
+    } else {
+      videoRef.current.pause();
+    }
+  };
+
+  return (
+    <div className="modal-reel" style={{ aspectRatio }}>
+      <video
+        ref={videoRef}
+        className="project-video"
+        src={src}
+        autoPlay={autoPlay}
+        playsInline
+        preload="metadata"
+        muted={muted}
+        onClick={togglePlayback}
+        onLoadedMetadata={(event) => {
+          const { videoWidth, videoHeight } = event.currentTarget;
+          if (videoWidth && videoHeight) setAspectRatio(`${videoWidth} / ${videoHeight}`);
+          setDuration(event.currentTarget.duration);
+        }}
+        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+        onError={onError}
+      />
+      <button
+        className="video-mute"
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          setMuted((value) => !value);
+        }}
+        aria-label={muted ? 'Unmute client video' : 'Mute client video'}
+      >
+        {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+      </button>
+      <input
+        className="timeline-track"
+        type="range"
+        min="0"
+        max={duration || 0}
+        step="0.1"
+        value={Math.min(currentTime, duration || 0)}
+        onChange={(event) => {
+          const nextTime = Number(event.target.value);
+          if (videoRef.current) videoRef.current.currentTime = nextTime;
+          setCurrentTime(nextTime);
+        }}
+        aria-label="Seek client video"
+      />
+    </div>
+  );
+}
+
+function ProjectModal({ project, clientProjects, videoUrls, close }: { project: Project; clientProjects: Project[]; videoUrls: Record<string, string>; close: () => void }) {
+  const [unavailableVideos, setUnavailableVideos] = useState<Record<string, boolean>>({});
+
   return (
     <div className="modal-backdrop" role="presentation" onClick={close}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="project-title" onClick={(event) => event.stopPropagation()}>
@@ -179,11 +385,35 @@ function ProjectModal({ project, close }: { project: Project; close: () => void 
             <X size={19} />
           </button>
         </div>
-        <div className={`modal-reel ${project.visualClass}`}>
-          <h3 id="project-title" className="display-title">{project.title}</h3>
+        <div className={`project-video-list${clientProjects.length === 1 ? ' single-video' : ''}`}>
+          {clientProjects.map((clientProject, index) => {
+            const uploadedVideo = videoUrls[clientProject.id];
+            const folderVideo = clientProject.videoFile
+              ? `/client-videos/${clientFolderNames[clientProject.client]}/${encodeURIComponent(clientProject.videoFile)}`
+              : getClientVideoPath(clientProject.client, index + 1);
+            const videoSource = uploadedVideo || (!unavailableVideos[clientProject.id] ? folderVideo : undefined);
+
+            return (
+            <div className={clientProject.visualClass} key={clientProject.id}>
+              {videoSource ? (
+                <ProjectVideo
+                  src={videoSource}
+                  autoPlay={index === 0}
+                  onError={() => setUnavailableVideos((videos) => ({ ...videos, [clientProject.id]: true }))}
+                />
+              ) : (
+                <div className="project-video-empty">
+                  <Clapperboard size={28} />
+                  <span>Upload {clientProject.title} to preview it here.</span>
+                </div>
+              )}
+            </div>
+            );
+          })}
         </div>
         <div className="modal-copy">
-          {project.description} <span style={{ color: 'var(--acid)' }}>{project.format}</span>
+          <strong id="project-title">{project.client}</strong>
+          <p>{clientProjects.length} completed video{clientProjects.length === 1 ? '' : 's'} across {clientProjects[0].category.toLowerCase()} work.</p>
         </div>
       </div>
     </div>
@@ -195,16 +425,34 @@ function Home() {
   const [showreelOpen, setShowreelOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [category, setCategory] = useState<Category>('All');
-  const [sent, setSent] = useState(false);
+  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const reelVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [reelTime, setReelTime] = useState(0);
+  const [reelDuration, setReelDuration] = useState(0);
+  const [heroMuted, setHeroMuted] = useState(false);
+  const [projectVideos, setProjectVideos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    void loadClientVideos().then(setProjectVideos).catch(() => undefined);
+  }, []);
 
   const visibleProjects = useMemo(
-    () => category === 'All' ? projects : projects.filter((project) => project.category === category),
+    () => {
+      const filteredProjects = category === 'All' ? projects : projects.filter((project) => project.category === category);
+      return filteredProjects.filter((project, index) => filteredProjects.findIndex((item) => item.client === project.client) === index);
+    },
     [category],
   );
 
-  const handleContact = (event: FormEvent<HTMLFormElement>) => {
+  const handleContact = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSent(true);
+    setContactStatus('sending');
+    try {
+      await emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, event.currentTarget, { publicKey: PUBLIC_KEY });
+      setContactStatus('success');
+    } catch {
+      setContactStatus('error');
+    }
   };
 
   return (
@@ -218,7 +466,7 @@ function Home() {
               <Reveal>
                 <div className="hero-kicker">
                   <span className="line" />
-                  <span className="eyebrow">Independent editor / Mumbai — London</span>
+                  <span className="eyebrow">Freelancer / Tuticorin — Coimbatore</span>
                 </div>
               </Reveal>
               <Reveal className="delay-1">
@@ -226,24 +474,59 @@ function Home() {
               </Reveal>
               <Reveal className="delay-2">
                 <p className="hero-copy">
-                  Ayan Mehta cuts images until they have a pulse. Commercials, music films and documentaries with a point of view.
+                  Editing that transforms footage into compelling stories. Commercials, music videos, documentaries, and branded films crafted with precision, rhythm, and a distinct cinematic point of view.
                 </p>
                 <div className="hero-meta">
-                  <p><strong>Currently</strong>Cutting in suite 04</p>
-                  <p><strong>Available</strong>Q3 / 2024</p>
+                  <p><strong>Currently</strong>Editing from Chennai-Coimbatore, India</p>
+                  <p><strong>Available</strong>Open for freelance &amp; collaborations</p>
                 </div>
               </Reveal>
             </div>
             <Reveal className="delay-3">
               <div className="reel-stage">
                 <div className="reel-frame">
+                  <video
+                    ref={reelVideoRef}
+                    className="reel-video"
+                    src="/showreel.mp4"
+                    playsInline
+                    muted={heroMuted}
+                    loop
+                    autoPlay
+                    onClick={() => {
+                      if (reelVideoRef.current?.paused) void reelVideoRef.current.play();
+                      else reelVideoRef.current?.pause();
+                    }}
+                    onLoadedMetadata={(event) => setReelDuration(event.currentTarget.duration)}
+                    onTimeUpdate={(event) => setReelTime(event.currentTarget.currentTime)}
+                  />
                   <span className="reel-stamp">SHOWREEL / 01:32</span>
-                  <span className="reel-word">EYES<br />OPEN</span>
-                  <button className="play-button" type="button" onClick={() => setShowreelOpen(true)} data-testid="button-play-showreel">
-                    <Play size={14} fill="currentColor" /> Play showreel
+                  <button
+                    className="video-mute hero-mute"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setHeroMuted((value) => !value);
+                    }}
+                    aria-label={heroMuted ? 'Unmute showreel' : 'Mute showreel'}
+                  >
+                    {heroMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                   </button>
+                  <input
+                    className="timeline-track"
+                    type="range"
+                    min="0"
+                    max={reelDuration || 0}
+                    step="0.1"
+                    value={Math.min(reelTime, reelDuration || 0)}
+                    onChange={(event) => {
+                      const nextTime = Number(event.target.value);
+                      if (reelVideoRef.current) reelVideoRef.current.currentTime = nextTime;
+                      setReelTime(nextTime);
+                    }}
+                    aria-label="Seek showreel"
+                  />
                 </div>
-                <div className="timeline-bar"><span>00:00</span><span className="timeline-track" /><span>01:32</span></div>
               </div>
             </Reveal>
           </div>
@@ -254,10 +537,10 @@ function Home() {
 
         <section className="manifesto" aria-labelledby="manifesto-title">
           <div className="section-wrap manifesto-grid">
-            <Reveal><span className="eyebrow">01 / The feeling</span></Reveal>
+            <Reveal><span className="eyebrow">01 / Editing with purpose</span></Reveal>
             <Reveal className="delay-1">
-              <h2 id="manifesto-title" className="display-title">Good editing is knowing <span>what to leave out.</span></h2>
-              <p className="manifesto-note">The cut is the conversation. I listen for the half-second before a look, the breath after a line, the frame nobody else noticed.</p>
+              <h2 id="manifesto-title" className="display-title">Editing with <span>purpose.</span></h2>
+              <p className="manifesto-note">Every frame serves a reason. From commercials to music videos and films, I craft edits that elevate the story through precision and timing.</p>
             </Reveal>
           </div>
         </section>
@@ -266,15 +549,15 @@ function Home() {
           <Reveal>
             <div className="section-heading">
               <div>
-                <span className="eyebrow">02 / Selected work</span>
-                <h2 id="work-title" className="display-title">THE CUTS</h2>
+                <span className="eyebrow">02 / Selected Work</span>
+                <h2 id="work-title" className="display-title">SELECTED WORK</h2>
               </div>
-              <p>Recent work, arranged by instinct rather than chronology. Click a frame to enter.</p>
+              <p>12 commercial and brand edits across six clients, shaped with precision, rhythm, and a clear sense of purpose.</p>
             </div>
           </Reveal>
           <Reveal className="delay-1">
             <div className="filter-row" role="group" aria-label="Filter selected work">
-              {(['All', 'Commercial', 'Culture', 'Music'] as Category[]).map((filter) => (
+              {(['All', 'Brand Films', 'Social Media', 'Commercials', 'Campaigns', 'Reels'] as Category[]).map((filter) => (
                 <button
                   key={filter}
                   className={`filter-btn${category === filter ? ' active' : ''}`}
@@ -296,18 +579,32 @@ function Home() {
                     className={`work-visual ${project.visualClass}`}
                     type="button"
                     onClick={() => setSelectedProject(project)}
-                    aria-label={`View ${project.title} project`}
+                    aria-label={`Play ${project.client} video`}
                     data-testid={`button-project-${project.id}`}
                   >
+                    {project.videoFile && (
+                      <video
+                        className="work-card-video"
+                        src={`/client-videos/${clientFolderNames[project.client]}/${encodeURIComponent(project.videoFile)}`}
+                        muted
+                        playsInline
+                        loop
+                        autoPlay
+                        aria-hidden="true"
+                      />
+                    )}
                     <span className="visual-tag">{project.category} / {project.year}</span>
-                    <span>{project.title}</span>
+                    <span>{project.client}</span>
+                    <span className="watch-label"><Play size={12} fill="currentColor" /> CLICK TO WATCH</span>
                   </button>
                   <div className="work-card-meta">
                     <div>
                       <h3>{project.client}</h3>
                       <p>{project.format}</p>
                     </div>
-                    <time>{String(index + 1).padStart(2, '0')} — 04</time>
+                    <time>
+                      {projects.filter((item) => item.client === project.client).length} video{projects.filter((item) => item.client === project.client).length === 1 ? '' : 's'}
+                    </time>
                   </div>
                 </article>
               </Reveal>
@@ -318,16 +615,16 @@ function Home() {
         <section id="approach" className="suite" aria-labelledby="approach-title">
           <div className="section-wrap suite-grid">
             <Reveal>
-              <span className="eyebrow">03 / The method</span>
-              <h2 id="approach-title" className="display-title">INSIDE<br />THE SUITE</h2>
-              <p className="suite-intro">No magic button. Just a sharp brief, an unreasonable amount of listening, and a timeline that knows when to get out of the way.</p>
+              <span className="eyebrow">03 / THE METHOD</span>
+              <h2 id="approach-title" className="display-title">INSIDE<br />THE TIMELINE</h2>
+              <p className="suite-intro">No presets doing the thinking. Just timing, movement, layers, and a lot of keyframes.</p>
             </Reveal>
             <div className="suite-list">
               {[
-                ['01', 'Find the pulse', 'I watch without sound first. Then I listen without looking.', 'ASSEMBLE'],
-                ['02', 'Protect the strange', 'The unexpected take is usually where the film starts breathing.', 'DISCOVER'],
-                ['03', 'Make it inevitable', 'Every frame earns its place. Every exit leaves a mark.', 'REFINE'],
-                ['04', 'Give it air', 'A pause is not a gap. It is where the audience catches up.', 'RELEASE'],
+                ['01', 'Build the motion', 'Every movement starts with timing. I shape position, scale, rotation, and speed until the motion feels intentional.', 'ANIMATE'],
+                ['02', 'Make it flow', "Transitions shouldn't just connect two shots. They should make the movement feel continuous.", 'CONNECT'],
+                ['03', 'Add the detail', 'Typography, effects, compositing, and small movements bring the edit to life. Every detail has a purpose.', 'REFINE'],
+                ['04', 'Let it breathe', "Good motion isn't about moving everything. Sometimes the strongest frame is the one that stays still.", 'DELIVER'],
               ].map(([number, title, copy, label], index) => (
                 <Reveal key={number} className={`delay-${Math.min(index + 1, 4)}`}>
                   <div className="suite-row" data-testid={`row-method-${number}`}>
@@ -343,16 +640,20 @@ function Home() {
 
         <section id="about" className="about section-wrap" aria-labelledby="about-title">
           <div className="about-grid">
-            <Reveal><div className="about-portrait" role="img" aria-label="Abstract portrait mark for Ayan Mehta" data-testid="img-ayan-portrait" /></Reveal>
+            <Reveal>
+              <div className="about-visuals">
+                <img className="about-photo" src="/Black%20Hole.jpg" alt="Portrait of Jacob Abraham J" data-testid="img-jacob-photo" />
+              </div>
+            </Reveal>
             <Reveal className="delay-1">
-              <span className="eyebrow">04 / The person behind the timeline</span>
-              <h2 id="about-title" className="display-title">AYAN<br /><span style={{ color: 'var(--acid)' }}>MEHTA</span></h2>
-              <p className="about-lede">Editor, sound obsessive, collector of almost-moments.</p>
-              <p className="about-copy">Based between Mumbai and London, Ayan works with directors, brands and artists who want the film to feel like something — not just look like it. He brings a documentary eye to commercial work and a little mischief to everything else.</p>
+              <span className="eyebrow">04 / THE PERSON BEHIND THE TIMELINE</span>
+              <h2 id="about-title" className="display-title">JACOB<br /><span style={{ color: 'var(--acid)' }}>ABRAHAM J</span></h2>
+              <p className="about-lede">Video editor, motion enthusiast, and someone who probably spends too long perfecting a 2-second cut.</p>
+              <p className="about-copy">I work mainly on digital marketing, social media, and brand content — turning raw footage into edits that feel sharp, engaging, and built to hold attention.</p>
               <div className="credits">
-                <p>Represented by<strong>Cutting Room / IN</strong></p>
-                <p>Tools of choice<strong>Premiere / Resolve</strong></p>
-                <p>After-hours habit<strong>Field recordings</strong></p>
+                <p>Tools of choice<strong>Premiere Pro / After Effects</strong></p>
+                <p>What I bring<strong>Editing / Motion Graphics / Visual Storytelling</strong></p>
+                <p>Currently into<strong>Finding better ways to make every frame count.</strong></p>
               </div>
             </Reveal>
           </div>
@@ -361,26 +662,66 @@ function Home() {
         <section id="contact" className="contact" aria-labelledby="contact-title">
           <div className="section-wrap contact-grid">
             <Reveal>
-              <span className="eyebrow">05 / Start something</span>
-              <h2 id="contact-title" className="display-title">LET'S<br />CUT.</h2>
-              <p className="contact-lede">Have a rough idea, a locked picture, or just a feeling you cannot quite name? Send it over. I will know where to start.</p>
+              <span className="eyebrow">05 / LET'S CUT.</span>
+              <h2 id="contact-title" className="display-title">You have the story.<br /><span>I'll find the rhythm.</span></h2>
+              <p className="contact-lede">From raw footage to the final frame —<br />let's make something people want to watch.</p>
             </Reveal>
             <Reveal className="delay-2">
-              {sent ? (
+              {contactStatus === 'success' ? (
                 <div className="form-success" data-testid="status-contact-success">
-                  <strong>Message received.</strong><br />
-                  I will get back to you within two working days. In the meantime, keep the strange take.
+                  Thanks! Your project has been received. I'll get back to you within 24 hours.
+                </div>
+              ) : contactStatus === 'error' ? (
+                <div className="form-error" role="alert" data-testid="status-contact-error">
+                  Something went wrong. Please try again.
                 </div>
               ) : (
                 <form className="contact-form" onSubmit={handleContact} data-testid="form-contact">
-                  <label htmlFor="name">Your name</label>
-                  <input id="name" name="name" type="text" placeholder="Director / producer / curious human" required data-testid="input-contact-name" />
-                  <label htmlFor="email">Your email</label>
-                  <input id="email" name="email" type="email" placeholder="you@somewhere.com" required data-testid="input-contact-email" />
-                  <label htmlFor="brief">The short version</label>
-                  <textarea id="brief" name="brief" placeholder="What are we making?" required data-testid="input-contact-brief" />
-                  <button className="contact-submit" type="submit" data-testid="button-send-contact">
-                    Send the brief <ArrowUpRight size={15} />
+                  <input type="hidden" name="to_email" value="blackxspace3@gmail.com" />
+                  <div className="contact-field">
+                    <label htmlFor="full-name">Full Name *</label>
+                    <input id="full-name" name="full_name" type="text" autoComplete="name" placeholder="Your full name" required data-testid="input-contact-name" />
+                  </div>
+                  <div className="contact-field">
+                    <label htmlFor="email">Email Address *</label>
+                    <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required data-testid="input-contact-email" />
+                  </div>
+                  <div className="contact-field">
+                    <label htmlFor="company">Company / Brand</label>
+                    <input id="company" name="company" type="text" autoComplete="organization" placeholder="Company or brand name" />
+                  </div>
+                  <div className="contact-field">
+                    <label htmlFor="project-type">Project Type</label>
+                    <select id="project-type" name="project_type" defaultValue="">
+                      <option value="" disabled>Select a project type</option>
+                      <option>Social Media Reels</option>
+                      <option>Brand Video</option>
+                      <option>YouTube</option>
+                      <option>Motion Graphics</option>
+                      <option>Advertisement</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div className="contact-row">
+                    <div className="contact-field">
+                      <label htmlFor="budget">Budget</label>
+                      <input id="budget" name="budget" type="text" placeholder="Optional" />
+                    </div>
+                    <div className="contact-field">
+                      <label htmlFor="deadline">Deadline</label>
+                      <input id="deadline" name="deadline" type="text" placeholder="Optional" />
+                    </div>
+                  </div>
+                  <div className="contact-field">
+                    <label htmlFor="brief">Project Brief *</label>
+                    <textarea id="brief" name="project_brief" placeholder="Tell me what you're making." required data-testid="input-contact-brief" />
+                  </div>
+                  <div className="contact-field">
+                    <label htmlFor="reference">Reference</label>
+                    <input id="reference" name="reference" type="text" placeholder="Optional" />
+                  </div>
+                  <button className="contact-submit" type="submit" disabled={contactStatus === 'sending'} data-testid="button-send-contact">
+                    {contactStatus === 'sending' ? <><span className="submit-spinner" /> Sending...</> : <>SEND PROJECT <ArrowUpRight size={15} /></>}
                   </button>
                 </form>
               )}
@@ -391,14 +732,14 @@ function Home() {
 
       <footer className="footer">
         <div className="section-wrap footer-row">
-          <p>© 2024 CUT / TO — Ayan Mehta</p>
-          <a href="mailto:hello@cutto.studio" data-testid="link-footer-email"><Mail size={13} /> hello@cutto.studio</a>
+          <p>© 2026 BLACKxSPACE — Jacob Abraham J</p>
+          <a href="mailto:blackxspace3@gmail.com" data-testid="link-footer-email"><Mail size={13} /> blackxspace3@gmail.com</a>
           <a href="#top" data-testid="link-back-top">Back to top <ArrowDown size={13} style={{ transform: 'rotate(180deg)' }} /></a>
         </div>
       </footer>
 
       {showreelOpen && <ReelModal close={() => setShowreelOpen(false)} />}
-      {selectedProject && <ProjectModal project={selectedProject} close={() => setSelectedProject(null)} />}
+      {selectedProject && <ProjectModal project={selectedProject} clientProjects={projects.filter((project) => project.client === selectedProject.client)} videoUrls={projectVideos} close={() => setSelectedProject(null)} />}
     </div>
   );
 }
